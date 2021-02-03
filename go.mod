@@ -1,4 +1,4 @@
-module gravclient
+module github.com/floren/gravwell-examples
 
 go 1.15
 
