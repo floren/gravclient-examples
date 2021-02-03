@@ -1,0 +1,3 @@
+Example execution:
+
+./barchart -s localhost:8080 -q 'tag=syslog syslog Severity | stats count by Severity | chart count by Severity' -d '-1h' -title 'Syslog event count by Severity' | gnuplot | feh -

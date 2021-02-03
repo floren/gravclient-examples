@@ -1,0 +1,3 @@
+Example execution:
+
+./runsearch -s localhost:8080 -q 'tag=syslog count' -d '-1h'
