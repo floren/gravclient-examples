@@ -2,6 +2,8 @@ package main
 
 import (
 	"errors"
+	"encoding/csv"
+	"os"
 	"flag"
 	"fmt"
 	"log"
@@ -20,6 +22,9 @@ var (
 	password = flag.String("p", "changeme", `Password (default "changeme")`)
 	query    = flag.String("q", "", "Query string")
 	duration = flag.String("d", "-1h", "Search duration")
+	count = flag.Int("c", 10, "Count of results to fetch")
+
+	useTable bool
 )
 
 func main() {
@@ -53,8 +58,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Parse request failed: %v", err)
 	}
-	if psr.RenderModule != "text" && psr.RenderModule != "raw" && psr.RenderModule != "hex" {
-		log.Fatalf("Sorry, you can only use the text, raw, or hex renderers; %v isn't supported.", psr.RenderModule)
+	if psr.RenderModule != "text" && psr.RenderModule != "raw" && psr.RenderModule != "hex" && psr.RenderModule != "table" {
+		log.Fatalf("Sorry, you can only use the text, raw, table, or hex renderers; %v isn't supported.", psr.RenderModule)
+	}
+	if psr.RenderModule == "table" {
+		useTable = true
 	}
 
 	// Now start the search
@@ -68,15 +76,25 @@ func main() {
 		log.Fatalf("Failed to wait for search: %v", err)
 	}
 
-	// Grab the first 10 results
-	results, err := c.GetTextResults(s, 0, 10)
-	if err != nil {
-		log.Fatalf("Failed to get results: %v", err)
-	}
-
-	// Now print the results
-	for _, r := range results.Entries {
-		fmt.Println(string(r.Data))
+	if !useTable {
+		results, err := c.GetTextResults(s, 0, uint64(*count))
+		if err != nil {
+			log.Fatalf("Failed to get results: %v", err)
+		}
+		for _, r := range results.Entries {
+			fmt.Println(string(r.Data))
+		}
+	} else {
+		results, err := c.GetTableResults(s, 0, uint64(*count))
+		if err != nil {
+			log.Fatalf("Failed to get results: %v", err)
+		}
+		wtr := csv.NewWriter(os.Stdout)
+		wtr.Write(results.Entries.Columns)
+		for _, r := range results.Entries.Rows {
+			wtr.Write(r.Row)
+		}
+		wtr.Flush()
 	}
 }
 
